@@ -1,0 +1,336 @@
+---
+title: "Final Project Stat 5310"
+author: "Otavek Aliev | Oscar Pacheco"
+date: "`r Sys.Date()`"
+output: pdf_document
+--- 
+# Introduction
+Several psychologists agree that the main goal of rational human beings is to find 
+happiness irrespective of their geographical locations, the time they lived or other 
+demographic variables. Happiness is defined differently in each community, hence, 
+there is no common ground to describe happiness (McMahon, 2008). However, there are 
+entities that go deep in trying to answer and assess the happiness of the world, 
+by taking worldwide surveys in all the countries, and utilizing distinct factors, 
+to measure happiness. 
+
+For our project, we will use the World Happiness Reports from the year 2021, 
+provided by the Gallup World Survey year 2021, which is a poll that continually 
+surveys citizens in 160 countries, representing more than 98% of the world's adult 
+population. The poll has over 100 global questions and region-specific items. 
+Gallup also works with organizations, cities, governments, and countries to create 
+custom items and indexes to gather information to provide a score to the “happiness” 
+of each country. 
+
+The main purpose of our regression analysis is to predict the world Ladder.score - 
+Happiness score (Dependent variable) based on different variables like GDP per 
+capita, social support, healthy life expectancy, freedom to make life choices, 
+generosity (independent variables). We will also determine which variables have 
+more influence on the response variable. Lastly, we hope to provide a distinct 
+perspective to our readers, as often, we define happiness with material things, 
+and we do not measure it with other variables that are important in our lives, 
+like peace, freedom of choices, generosity, etc. 
+
+## Approach for Regression analysis 
+
+We will start with data exploration by viewing the basic statistics of the variables , 
+different data types, and review if there is need for data preprocessing. We then 
+will proceed to visualize the data, plotting the different variables and see the 
+correlation with a scatterplot matrix. 
+
+We will develop our regression models based on the most relevant features for our 
+dependent variable. Run different models to pick the most accurate one and 
+improve the model. Finally, we will show our prediction based on the selected best 
+fitted model.
+# Library, packages and data 
+
+```{r, results =FALSE, message=FALSE}
+library(ggplot2) 
+library(tidyverse) 
+library(GGally) 
+library(corrplot) 
+library(compareDF)
+
+hr_2021 <- read.csv("2021.csv", stringsAsFactors = TRUE) #World Happiness Report 2021
+```
+
+# Data Preparation
+## Data Source 
+Dataset “World Happiness Report 2021”, was obtained on Kaggle, the link is attached below: 
+
+https://www.kaggle.com/datasets/mathurinache/world-happiness-report?select=2020.csv
+
+The data set “The World Happiness Report”, is a publication of the Network, 
+powered by the Gallup World Poll data.
+
+## Dataset 
+The World Happiness Report 2021 contains 149 observations and 20. It contains 18 
+numerical variables like "Ladder.score"(happiness score), "Logged.GDP.per.capita",
+"Generosity" among other scores. Also contains 2 nominal variables: "Country" and 
+"Regional.indicator"(Most useful for our analysis).
+
+Top 3 countries: Finland (1) | Denmark (2) | Switzerland (2)
+
+Bottom 3 countries: Rwanda (147) | Zimbabwe (148) | Afghanistan (149)
+
+Rank of the Unites States: United States (19)
+
+```{r , message=FALSE}
+#Top 3 countries
+head(hr_2021, n = 3)
+#Bottom 3 countries
+tail(hr_2021, n = 3)
+#United States Rank
+hr_2021[which(hr_2021$Country.name == "United States"), ]
+```
+# Data Variables
+
+## Nomival variables
+We can see that “Regional.indicator” is not distributed in a proportional way, 
+since there are regions in the world with more countries than others. 
+
+```{r}
+table(hr_2021$Regional.indicator)
+```
+
+## Numerical variables 
+Our dependent variable (Ladder.score) shows that the scores range from 2 - 7 approx., 
+in a scale from 0 - 10, with a median of 5 and a mean also of 5, showing how most 
+of the country's "happiness" is. The summary of the data set also allows us to see 
+that some variables are whole numbers of scores and some are percentages such as
+"perceptions.of.corruptions" and  "Generosity". 
+
+```{r, }
+summary(hr_2021)
+```
+
+## Data Cleaning
+We have no missing values in our data set, and with "str" function, we can check 
+if there are any inconsistent factors, which we do not have in our data set.
+We also were able to see some variables have data that's repetitive so we will 
+make them "NULL", data ready for exploratory analysis. 
+
+```{r, message=FALSE}
+sum(is.na(hr_2021))
+str(hr_2021)
+# Make NULL variables with repetitive data
+hr_2021[13:20] <- NULL
+hr_2021[4:6] <-NULL
+```
+
+# Exploratory Data analysis 
+## Correlation 
+### Scatter-plot matrix
+
+```{r, message=FALSE}
+#Scatter-plot matrix
+ggpairs(hr_2021[3:9])
+#heat map
+#Positive correlations are displayed in blue and negative correlations in red.
+#Color intensity and the size of the circle are proportional to the correlation coefficients.
+corrplot(cor(hr_2021[3:9]), method = "color") 
+```
+
+With "ggpairs" from the libraries "ggplot2" and "GGally", we visualize   
+the different correlations between variables in a scatter plot matrix, better than 
+the usual matrix that we obtain with "plot", as it provides one score, and proper  
+visualization of the distribution of data in each of the variables. 
+We can see that the variables about GDP, social support, and healthy life expectancy, 
+have the highest correlation with our dependent variables "Ladder.score". Meaning that has these variables 
+increase, so does the ladder score. We can still see correlation between the variables, 
+freedom to make life choices, generosity, and perception of corruption, but they 
+are not as strong as the other three variables mentioned before.
+Our heat map with "corrplot" function, from the package "corrplot", supports our 
+previous observations, as positive correlations are displayed in blue and negative 
+correlations in red. Th color intensity and the size of the 
+are proportional to the correlation coefficients.
+
+# Regression Models
+
+Our goal with our regression analysis, will be to predict Ladder.score . We will 
+perform different models, using singular, multiple and all the variables. 
+
+Our exploratory data analysis showed us the variables that are more correlated 
+with Ladder.score. 
+
+Model 1 will be a simple linear regression will be a simple linear regression L
+adder.score ~ Logged.GDP.per.capita. 
+
+Model 2 will contain all the variables that showed more correlation with Ladder.score, 
+which are: Logged.GDP.per.capita, Social.support, Healthy.life.expectancy and 
+Freedom.to.make.life.choices.  
+
+Model 3 will have all the variables in the dataset. Including interaction between 
+the nominal variable of region. 
+
+We will use the summary() function to obtain an analysis of each model, which will 
+be of use when selecting the best one.  
+
+```{r}
+#Model 1 
+model_1 <- lm(Ladder.score  ~ Logged.GDP.per.capita , data = hr_2021)
+##Model 1 summary 
+summary(model_1)
+
+#Model 2
+model_2 <- lm(Ladder.score ~ Logged.GDP.per.capita + Social.support + 
+                Healthy.life.expectancy + Freedom.to.make.life.choices, data = hr_2021)
+##Model 2 summary 
+summary(model_2)
+
+#Model 3
+#Data used for model 3, since we dont want name of countries on the linear regression
+model_3_data <- hr_2021[3:9]
+model_3 <- lm(Ladder.score ~ ., data = model_3_data)
+##Model 3 summary 
+summary(model_3)
+```
+
+We will select model 2, since it explains variance of 74.42% compared to model 1
+which explains 62.37%, and compared to model 3, which explains variance of 75.58%,
+that is higher than our model 2, howevere model 2 has only 4 variables while 
+model 3 has 7.
+
+```{r}
+summary(model_2)
+```
+
+Summary of model 2 provide us with insights about the performance of the model,
+such intercept and the coefficients of the independent variables and the 
+dependent variable. 
+A unit increase in Logged.GDP.per.capita will increase the score by 0.292 in
+Ladder.score.
+Summary of model 2 also shows us  that all the 4 variables are statistically significant, 
+with values lower that 0.05.
+In addition R square of 74.42% indicates that the variation is explained by the model is good. 
+For now, we will move to try to improve the results of the summary of model 2.
+
+# Diagnostic and transformations
+## Regression diagnostic plots
+
+```{r}
+#Regression diagnostics on model 2
+par(mfrow = c(2,2)) 
+plot(model_2)
+```
+
+ - Residual vs Fitted: Doesn't show a great horizontal line, looks more like a  
+U shape. At least there is not a distinct pattern which is an indicator for relationship. 
+
+- Normal Q-Q: Good residual distribution as the points follow the straight dashed line. 
+just a few outliers on the lower left side, and the upper right side. 
+
+- Scale-Location (or Spread-Location): Shows some variance in our residuals,  
+as we don’t have a horizontal line, but some inclination. 
+
+- Residuals vs Leverage: Shows there are few extreme values that would affect our regression,  
+However, nothing too severe. 
+
+## Standarized residuals against each predictor.
+
+```{r}
+par(mfrow = c(2,2)) 
+rstand <- rstandard(model_2) 
+plot(rstand ~ Logged.GDP.per.capita, data = hr_2021) 
+plot(rstand ~ Social.support, data = hr_2021) 
+plot(rstand ~ Healthy.life.expectancy, data = hr_2021) 
+plot(rstand ~ Freedom.to.make.life.choices, data = hr_2021)
+```
+
+The standardized residuals plot shows Homoscedasticity, among the variables,  
+since there are no cluster of data points. This plot also strength, our initial visualization 
+of the correlation of the data, where we could see that most of the data showed normal 
+distribution, good histogram. Implying that even transformations such as applying  
+log() on our linear regression mode, will not have a significant change in the results  
+previous results of our model. 
+
+# Transformation
+## Developing model based on Log transformations
+
+```{r}
+#log transformation of model 1
+log_model_1 <- lm(log(Ladder.score) ~ Logged.GDP.per.capita + Social.support + 
+    Healthy.life.expectancy + Freedom.to.make.life.choices, data = hr_2021)
+
+summary(log_model_1)$r.sq
+
+#log transformation on model 2 
+log_model_2 <- lm(log(Ladder.score) ~ Logged.GDP.per.capita + Social.support * 
+                    Freedom.to.make.life.choices + Healthy.life.expectancy, data = hr_2021)
+
+summary(log_model_2)$r.sq
+```
+
+As expected, since the data on the World Happiness Report is on a good part, very  
+good distributed, utilizing log() on our dependent variable, did not improve the  
+results of our previous model 2, even after adding interaction between two of the  
+variables that have a significant impact on our dependent variable (GDP and Social Support). 
+
+# Conclusions
+
+It seems out model 2 is the best fit, the summary also supports this, since the  
+model has p-value less than 0.05, all the variables are statistically significant,  
+low residual to standard error ratio, and well distributed data, as well, both 
+previous log() on lm() didn't surpass the 74.42% obtained previously. 
+
+We can see which variables are related the most to the "ladder.score (happiness score)" 
+and it is remarkably interesting to see that happiness cannot be measured just by money  
+(GDP per capita), or only for freedom. However, our model shows us that freedom of 
+choice and life expectancy, has a significant impact on the happiness score. Of course, 
+a combination on high scores on the other variables is important, but these two are
+the ones with the biggest impact on the score. 
+
+## Predictions based on selected model 
+Our fitted regression model is the next:
+Ladder.Score = -3.11157 + 0.29182(Logged.GDP.per.capita) – 2.16586(Social.support) 
++ 0.03308(Healthy.life.expectancy) + 2.49817(Freedom.to.make.life.choices)
+
+Prediction case 1 - Balanced GDP - Freedom and life expectancy
+Country with scores of: GDP = 9.750, Social support = 0.854, healthy life 
+expectancy = 70.000, freedom to make life choices  = 0.9000
+
+```{r}
+#define new country
+new <- data.frame(Logged.GDP.per.capita=c(9.775), Social.support=c(0.854),
+                  Healthy.life.expectancy=c(70.000), Freedom.to.make.life.choices = 0.900)
+
+#use the fitted model to predict the rating for the new player
+predict(model_2, newdata=new)
+```
+
+Prediction case 2 - High GDP and low life expectancy and freedom
+Country with scores of: GDP = 6.750, Social support = 0.8000, healthy life 
+expectancy = 65, freedom to make life choices  = 0.8000
+
+```{r}
+#define new country
+new <- data.frame(Logged.GDP.per.capita=c(11.500), Social.support=c(0.8000),
+                  Healthy.life.expectancy=c(50), Freedom.to.make.life.choices = 0.4000)
+
+#use the fitted model to predict the rating for the new player
+predict(model_2, newdata=new)
+```
+
+Prediction case 3 - Low High GDP and high life expectancy and freedom
+Country with scores of: GDP = 6.750, Social support = 0.8000, healthy life 
+expectancy = 65, freedom to make life choices  = 0.8000
+
+```{r}
+#define new country
+new <- data.frame(Logged.GDP.per.capita=c(6.635), Social.support=c(0.983),
+                  Healthy.life.expectancy=c(76.953), Freedom.to.make.life.choices = 0.970)
+
+#use the fitted model to predict the rating for the new player
+predict(model_2, newdata=new)
+```
+
+## Limitation and future improvements
+There are improvements that could be made to the analysis, the data was well distributed overall, 
+however, for a future project, we could gather data from previous year, and that 
+will improve our prediction power, as all models feed of the amount of data available. 
+We could also do comparison on year that there were some catastrophes or big event 
+for the world and see if the independent variables correlation with the happiness 
+score changed.  
+
+## Thank you 
+
+
